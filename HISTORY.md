@@ -1,210 +1,308 @@
-v1.3.1 / 2024-09-11
+2.5.2 / 2023-02-21
 ==================
 
-  * deps: encodeurl@~2.0.0
+  * Fix error message for non-stream argument
 
-v1.3.0 / 2024-09-03
+2.5.1 / 2022-02-28
 ==================
 
-  * ignore status message for HTTP/2 (#53)
+  * Fix error on early async hooks implementations
 
-v1.2.1 / 2024-09-02
+2.5.0 / 2022-02-21
 ==================
 
-  * Gracefully handle when handling an error and socket is null
+  * Prevent loss of async hooks context
+  * Prevent hanging when stream is not readable
+  * deps: http-errors@2.0.0
+    - deps: depd@2.0.0
+    - deps: statuses@2.0.1
 
-1.2.0 / 2022-03-22
+2.4.3 / 2022-02-14
 ==================
 
-  * Remove set content headers that break response
-  * deps: on-finished@2.4.1
-  * deps: statuses@2.0.1
-    - Rename `425 Unordered Collection` to standard `425 Too Early`
+  * deps: bytes@3.1.2
 
-1.1.2 / 2019-05-09
+2.4.2 / 2021-11-16
 ==================
 
-  * Set stricter `Content-Security-Policy` header
-  * deps: parseurl@~1.3.3
-  * deps: statuses@~1.5.0
+  * deps: bytes@3.1.1
+  * deps: http-errors@1.8.1
+    - deps: setprototypeof@1.2.0
+    - deps: toidentifier@1.0.1
 
-1.1.1 / 2018-03-06
+2.4.1 / 2019-06-25
 ==================
 
-  * Fix 404 output for bad / missing pathnames
-  * deps: encodeurl@~1.0.2
-    - Fix encoding `%` as last character
-  * deps: statuses@~1.4.0
+  * deps: http-errors@1.7.3
+    - deps: inherits@2.0.4
 
-1.1.0 / 2017-09-24
+2.4.0 / 2019-04-17
 ==================
 
-  * Use `res.headersSent` when available
+  * deps: bytes@3.1.0
+    - Add petabyte (`pb`) support
+  * deps: http-errors@1.7.2
+    - Set constructor name when possible
+    - deps: setprototypeof@1.1.1
+    - deps: statuses@'>= 1.5.0 < 2'
+  * deps: iconv-lite@0.4.24
+    - Added encoding MIK
 
-1.0.6 / 2017-09-22
+2.3.3 / 2018-05-08
 ==================
 
-  * deps: debug@2.6.9
+  * deps: http-errors@1.6.3
+    - deps: depd@~1.1.2
+    - deps: setprototypeof@1.1.0
+    - deps: statuses@'>= 1.3.1 < 2'
+  * deps: iconv-lite@0.4.23
+    - Fix loading encoding with year appended
+    - Fix deprecation warnings on Node.js 10+
 
-1.0.5 / 2017-09-15
+2.3.2 / 2017-09-09
 ==================
 
-  * deps: parseurl@~1.3.2
-    - perf: reduce overhead for full URLs
-    - perf: unroll the "fast-path" `RegExp`
+  * deps: iconv-lite@0.4.19
+    - Fix ISO-8859-1 regression
+    - Update Windows-1255
 
-1.0.4 / 2017-08-03
+2.3.1 / 2017-09-07
 ==================
 
-  * deps: debug@2.6.8
+  * deps: bytes@3.0.0
+  * deps: http-errors@1.6.2
+    - deps: depd@1.1.1
+  * perf: skip buffer decoding on overage chunk
 
-1.0.3 / 2017-05-16
+2.3.0 / 2017-08-04
 ==================
 
-  * deps: debug@2.6.7
-    - deps: ms@2.0.0
+  * Add TypeScript definitions
+  * Use `http-errors` for standard emitted errors
+  * deps: bytes@2.5.0
+  * deps: iconv-lite@0.4.18
+    - Add support for React Native
+    - Add a warning if not loaded as utf-8
+    - Fix CESU-8 decoding in Node.js 8
+    - Improve speed of ISO-8859-1 encoding
 
-1.0.2 / 2017-04-22
+2.2.0 / 2017-01-02
 ==================
 
-  * deps: debug@2.6.4
-    - deps: ms@0.7.3
+  * deps: iconv-lite@0.4.15
+    - Added encoding MS-31J
+    - Added encoding MS-932
+    - Added encoding MS-936
+    - Added encoding MS-949
+    - Added encoding MS-950
+    - Fix GBK/GB18030 handling of Euro character
 
-1.0.1 / 2017-03-21
+2.1.7 / 2016-06-19
 ==================
 
-  * Fix missing `</html>` in HTML document
-  * deps: debug@2.6.3
-    - Fix: `DEBUG_MAX_ARRAY_LENGTH`
+  * deps: bytes@2.4.0
+  * perf: remove double-cleanup on happy path
 
-1.0.0 / 2017-02-15
+2.1.6 / 2016-03-07
 ==================
 
-  * Fix exception when `err` cannot be converted to a string
-  * Fully URL-encode the pathname in the 404 message
-  * Only include the pathname in the 404 message
-  * Send complete HTML document
-  * Set `Content-Security-Policy: default-src 'self'` header
-  * deps: debug@2.6.1
-    - Allow colors in workers
-    - Deprecated `DEBUG_FD` environment variable set to `3` or higher
-    - Fix error when running under React Native
-    - Use same color for same namespace
-    - deps: ms@0.7.2
+  * deps: bytes@2.3.0
+    - Drop partial bytes on all parsed units
+    - Fix parsing byte string that looks like hex
 
-0.5.1 / 2016-11-12
+2.1.5 / 2015-11-30
 ==================
 
-  * Fix exception when `err.headers` is not an object
-  * deps: statuses@~1.3.1
-  * perf: hoist regular expressions
-  * perf: remove duplicate validation path
+  * deps: bytes@2.2.0
+  * deps: iconv-lite@0.4.13
 
-0.5.0 / 2016-06-15
+2.1.4 / 2015-09-27
 ==================
 
-  * Change invalid or non-numeric status code to 500
-  * Overwrite status message to match set status code
-  * Prefer `err.statusCode` if `err.status` is invalid
-  * Set response headers from `err.headers` object
-  * Use `statuses` instead of `http` module for status messages
-    - Includes all defined status messages
+  * Fix masking critical errors from `iconv-lite`
+  * deps: iconv-lite@0.4.12
+    - Fix CESU-8 decoding in Node.js 4.x
 
-0.4.1 / 2015-12-02
+2.1.3 / 2015-09-12
 ==================
 
-  * deps: escape-html@~1.0.3
-    - perf: enable strict mode
-    - perf: optimize string replacement
-    - perf: use faster string coercion
+  * Fix sync callback when attaching data listener causes sync read
+    - Node.js 0.10 compatibility issue
 
-0.4.0 / 2015-06-14
+2.1.2 / 2015-07-05
+==================
+
+  * Fix error stack traces to skip `makeError`
+  * deps: iconv-lite@0.4.11
+    - Add encoding CESU-8
+
+2.1.1 / 2015-06-14
+==================
+
+  * Use `unpipe` module for unpiping requests
+
+2.1.0 / 2015-05-28
+==================
+
+  * deps: iconv-lite@0.4.10
+    - Improved UTF-16 endianness detection
+    - Leading BOM is now removed when decoding
+    - The encoding UTF-16 without BOM now defaults to UTF-16LE when detection fails
+
+2.0.2 / 2015-05-21
+==================
+
+  * deps: bytes@2.1.0
+    - Slight optimizations
+
+2.0.1 / 2015-05-10
 ==================
 
   * Fix a false-positive when unpiping in Node.js 0.8
-  * Support `statusCode` property on `Error` objects
-  * Use `unpipe` module for unpiping requests
-  * deps: escape-html@1.0.2
-  * deps: on-finished@~2.3.0
-    - Add defined behavior for HTTP `CONNECT` requests
-    - Add defined behavior for HTTP `Upgrade` requests
-    - deps: ee-first@1.1.1
-  * perf: enable strict mode
-  * perf: remove argument reassignment
 
-0.3.6 / 2015-05-11
+2.0.0 / 2015-05-08
 ==================
 
-  * deps: debug@~2.2.0
-    - deps: ms@0.7.1
+  * Return a promise without callback instead of thunk
+  * deps: bytes@2.0.1
+    - units no longer case sensitive when parsing
 
-0.3.5 / 2015-04-22
+1.3.4 / 2015-04-15
 ==================
 
-  * deps: on-finished@~2.2.1
-    - Fix `isFinished(req)` when data buffered
+  * Fix hanging callback if request aborts during read
+  * deps: iconv-lite@0.4.8
+    - Add encoding alias UNICODE-1-1-UTF-7
 
-0.3.4 / 2015-03-15
+1.3.3 / 2015-02-08
 ==================
 
-  * deps: debug@~2.1.3
-    - Fix high intensity foreground color for bold
-    - deps: ms@0.7.0
+  * deps: iconv-lite@0.4.7
+    - Gracefully support enumerables on `Object.prototype`
 
-0.3.3 / 2015-01-01
+1.3.2 / 2015-01-20
 ==================
 
-  * deps: debug@~2.1.1
-  * deps: on-finished@~2.2.0
+  * deps: iconv-lite@0.4.6
+    - Fix rare aliases of single-byte encodings
 
-0.3.2 / 2014-10-22
+1.3.1 / 2014-11-21
 ==================
 
-  * deps: on-finished@~2.1.1
-    - Fix handling of pipelined requests
+  * deps: iconv-lite@0.4.5
+    - Fix Windows-31J and X-SJIS encoding support
 
-0.3.1 / 2014-10-16
+1.3.0 / 2014-07-20
 ==================
 
-  * deps: debug@~2.1.0
-    - Implement `DEBUG_FD` env variable support
+  * Fully unpipe the stream on error
+    - Fixes `Cannot switch to old mode now` error on Node.js 0.10+
 
-0.3.0 / 2014-09-17
+1.2.3 / 2014-07-20
 ==================
 
-  * Terminate in progress response only on error
-  * Use `on-finished` to determine request status
+  * deps: iconv-lite@0.4.4
+    - Added encoding UTF-7
 
-0.2.0 / 2014-09-03
+1.2.2 / 2014-06-19
 ==================
 
-  * Set `X-Content-Type-Options: nosniff` header
-  * deps: debug@~2.0.0
+  * Send invalid encoding error to callback
 
-0.1.0 / 2014-07-16
+1.2.1 / 2014-06-15
 ==================
 
-  * Respond after request fully read
-    - prevents hung responses and socket hang ups
-  * deps: debug@1.0.4
+  * deps: iconv-lite@0.4.3
+    - Added encodings UTF-16BE and UTF-16 with BOM
 
-0.0.3 / 2014-07-11
+1.2.0 / 2014-06-13
 ==================
 
-  * deps: debug@1.0.3
-    - Add support for multiple wildcards in namespaces
+  * Passing string as `options` interpreted as encoding
+  * Support all encodings from `iconv-lite`
 
-0.0.2 / 2014-06-19
+1.1.7 / 2014-06-12
 ==================
 
-  * Handle invalid status codes
+  * use `string_decoder` module from npm
 
-0.0.1 / 2014-06-05
+1.1.6 / 2014-05-27
 ==================
 
-  * deps: debug@1.0.2
+  * check encoding for old streams1
+  * support node.js < 0.10.6
 
-0.0.0 / 2014-06-05
+1.1.5 / 2014-05-14
 ==================
 
-  * Extracted from connect/express
+  * bump bytes
+
+1.1.4 / 2014-04-19
+==================
+
+  * allow true as an option
+  * bump bytes
+
+1.1.3 / 2014-03-02
+==================
+
+  * fix case when length=null
+
+1.1.2 / 2013-12-01
+==================
+
+  * be less strict on state.encoding check
+
+1.1.1 / 2013-11-27
+==================
+
+  * add engines
+
+1.1.0 / 2013-11-27
+==================
+
+  * add err.statusCode and err.type
+  * allow for encoding option to be true
+  * pause the stream instead of dumping on error
+  * throw if the stream's encoding is set
+
+1.0.1 / 2013-11-19
+==================
+
+  * dont support streams1, throw if dev set encoding
+
+1.0.0 / 2013-11-17
+==================
+
+  * rename `expected` option to `length`
+
+0.2.0 / 2013-11-15
+==================
+
+  * republish
+
+0.1.1 / 2013-11-15
+==================
+
+  * use bytes
+
+0.1.0 / 2013-11-11
+==================
+
+  * generator support
+
+0.0.3 / 2013-10-10
+==================
+
+  * update repo
+
+0.0.2 / 2013-09-14
+==================
+
+  * dump stream on bad headers
+  * listen to events after defining received and buffers
+
+0.0.1 / 2013-09-14
+==================
+
+  * Initial release

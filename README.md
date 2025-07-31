@@ -1,156 +1,223 @@
-## Pure JS character encoding conversion [![Build Status](https://travis-ci.org/ashtuchkin/iconv-lite.svg?branch=master)](https://travis-ci.org/ashtuchkin/iconv-lite)
+# raw-body
 
- * Doesn't need native code compilation. Works on Windows and in sandboxed environments like [Cloud9](http://c9.io).
- * Used in popular projects like [Express.js (body_parser)](https://github.com/expressjs/body-parser), 
-   [Grunt](http://gruntjs.com/), [Nodemailer](http://www.nodemailer.com/), [Yeoman](http://yeoman.io/) and others.
- * Faster than [node-iconv](https://github.com/bnoordhuis/node-iconv) (see below for performance comparison).
- * Intuitive encode/decode API
- * Streaming support for Node v0.10+
- * [Deprecated] Can extend Node.js primitives (buffers, streams) to support all iconv-lite encodings.
- * In-browser usage via [Browserify](https://github.com/substack/node-browserify) (~180k gzip compressed with Buffer shim included).
- * Typescript [type definition file](https://github.com/ashtuchkin/iconv-lite/blob/master/lib/index.d.ts) included.
- * React Native is supported (need to explicitly `npm install` two more modules: `buffer` and `stream`).
- * License: MIT.
+[![NPM Version][npm-image]][npm-url]
+[![NPM Downloads][downloads-image]][downloads-url]
+[![Node.js Version][node-version-image]][node-version-url]
+[![Build status][github-actions-ci-image]][github-actions-ci-url]
+[![Test coverage][coveralls-image]][coveralls-url]
 
-[![NPM Stats](https://nodei.co/npm/iconv-lite.png?downloads=true&downloadRank=true)](https://npmjs.org/packages/iconv-lite/)
+Gets the entire buffer of a stream either as a `Buffer` or a string.
+Validates the stream's length against an expected length and maximum limit.
+Ideal for parsing request bodies.
 
-## Usage
-### Basic API
-```javascript
-var iconv = require('iconv-lite');
+## Install
 
-// Convert from an encoded buffer to js string.
-str = iconv.decode(Buffer.from([0x68, 0x65, 0x6c, 0x6c, 0x6f]), 'win1251');
+This is a [Node.js](https://nodejs.org/en/) module available through the
+[npm registry](https://www.npmjs.com/). Installation is done using the
+[`npm install` command](https://docs.npmjs.com/getting-started/installing-npm-packages-locally):
 
-// Convert from js string to an encoded buffer.
-buf = iconv.encode("Sample input string", 'win1251');
-
-// Check if encoding is supported
-iconv.encodingExists("us-ascii")
+```sh
+$ npm install raw-body
 ```
 
-### Streaming API (Node v0.10+)
-```javascript
+### TypeScript
 
-// Decode stream (from binary stream to js strings)
-http.createServer(function(req, res) {
-    var converterStream = iconv.decodeStream('win1251');
-    req.pipe(converterStream);
+This module includes a [TypeScript](https://www.typescriptlang.org/)
+declaration file to enable auto complete in compatible editors and type
+information for TypeScript projects. This module depends on the Node.js
+types, so install `@types/node`:
 
-    converterStream.on('data', function(str) {
-        console.log(str); // Do something with decoded strings, chunk-by-chunk.
-    });
-});
-
-// Convert encoding streaming example
-fs.createReadStream('file-in-win1251.txt')
-    .pipe(iconv.decodeStream('win1251'))
-    .pipe(iconv.encodeStream('ucs2'))
-    .pipe(fs.createWriteStream('file-in-ucs2.txt'));
-
-// Sugar: all encode/decode streams have .collect(cb) method to accumulate data.
-http.createServer(function(req, res) {
-    req.pipe(iconv.decodeStream('win1251')).collect(function(err, body) {
-        assert(typeof body == 'string');
-        console.log(body); // full request body string
-    });
-});
+```sh
+$ npm install @types/node
 ```
 
-### [Deprecated] Extend Node.js own encodings
-> NOTE: This doesn't work on latest Node versions. See [details](https://github.com/ashtuchkin/iconv-lite/wiki/Node-v4-compatibility).
+## API
 
-```javascript
-// After this call all Node basic primitives will understand iconv-lite encodings.
-iconv.extendNodeEncodings();
-
-// Examples:
-buf = new Buffer(str, 'win1251');
-buf.write(str, 'gbk');
-str = buf.toString('latin1');
-assert(Buffer.isEncoding('iso-8859-15'));
-Buffer.byteLength(str, 'us-ascii');
-
-http.createServer(function(req, res) {
-    req.setEncoding('big5');
-    req.collect(function(err, body) {
-        console.log(body);
-    });
-});
-
-fs.createReadStream("file.txt", "shift_jis");
-
-// External modules are also supported (if they use Node primitives, which they probably do).
-request = require('request');
-request({
-    url: "http://github.com/", 
-    encoding: "cp932"
-});
-
-// To remove extensions
-iconv.undoExtendNodeEncodings();
+```js
+var getRawBody = require('raw-body')
 ```
 
-## Supported encodings
+### getRawBody(stream, [options], [callback])
 
- *  All node.js native encodings: utf8, ucs2 / utf16-le, ascii, binary, base64, hex.
- *  Additional unicode encodings: utf16, utf16-be, utf-7, utf-7-imap.
- *  All widespread singlebyte encodings: Windows 125x family, ISO-8859 family, 
-    IBM/DOS codepages, Macintosh family, KOI8 family, all others supported by iconv library. 
-    Aliases like 'latin1', 'us-ascii' also supported.
- *  All widespread multibyte encodings: CP932, CP936, CP949, CP950, GB2312, GBK, GB18030, Big5, Shift_JIS, EUC-JP.
+**Returns a promise if no callback specified and global `Promise` exists.**
 
-See [all supported encodings on wiki](https://github.com/ashtuchkin/iconv-lite/wiki/Supported-Encodings).
+Options:
 
-Most singlebyte encodings are generated automatically from [node-iconv](https://github.com/bnoordhuis/node-iconv). Thank you Ben Noordhuis and libiconv authors!
+- `length` - The length of the stream.
+  If the contents of the stream do not add up to this length,
+  an `400` error code is returned.
+- `limit` - The byte limit of the body.
+  This is the number of bytes or any string format supported by
+  [bytes](https://www.npmjs.com/package/bytes),
+  for example `1000`, `'500kb'` or `'3mb'`.
+  If the body ends up being larger than this limit,
+  a `413` error code is returned.
+- `encoding` - The encoding to use to decode the body into a string.
+  By default, a `Buffer` instance will be returned when no encoding is specified.
+  Most likely, you want `utf-8`, so setting `encoding` to `true` will decode as `utf-8`.
+  You can use any type of encoding supported by [iconv-lite](https://www.npmjs.org/package/iconv-lite#readme).
 
-Multibyte encodings are generated from [Unicode.org mappings](http://www.unicode.org/Public/MAPPINGS/) and [WHATWG Encoding Standard mappings](http://encoding.spec.whatwg.org/). Thank you, respective authors!
+You can also pass a string in place of options to just specify the encoding.
 
+If an error occurs, the stream will be paused, everything unpiped,
+and you are responsible for correctly disposing the stream.
+For HTTP requests, you may need to finish consuming the stream if
+you want to keep the socket open for future requests. For streams
+that use file descriptors, you should `stream.destroy()` or
+`stream.close()` to prevent leaks.
 
-## Encoding/decoding speed
+## Errors
 
-Comparison with node-iconv module (1000x256kb, on MacBook Pro, Core i5/2.6 GHz, Node v0.12.0). 
-Note: your results may vary, so please always check on your hardware.
+This module creates errors depending on the error condition during reading.
+The error may be an error from the underlying Node.js implementation, but is
+otherwise an error created by this module, which has the following attributes:
 
-    operation             iconv@2.1.4   iconv-lite@0.4.7
-    ----------------------------------------------------------
-    encode('win1251')     ~96 Mb/s      ~320 Mb/s
-    decode('win1251')     ~95 Mb/s      ~246 Mb/s
+  * `limit` - the limit in bytes
+  * `length` and `expected` - the expected length of the stream
+  * `received` - the received bytes
+  * `encoding` - the invalid encoding
+  * `status` and `statusCode` - the corresponding status code for the error
+  * `type` - the error type
 
-## BOM handling
+### Types
 
- * Decoding: BOM is stripped by default, unless overridden by passing `stripBOM: false` in options
-   (f.ex. `iconv.decode(buf, enc, {stripBOM: false})`).
-   A callback might also be given as a `stripBOM` parameter - it'll be called if BOM character was actually found.
- * If you want to detect UTF-8 BOM when decoding other encodings, use [node-autodetect-decoder-stream](https://github.com/danielgindi/node-autodetect-decoder-stream) module.
- * Encoding: No BOM added, unless overridden by `addBOM: true` option.
+The errors from this module have a `type` property which allows for the programmatic
+determination of the type of error returned.
 
-## UTF-16 Encodings
+#### encoding.unsupported
 
-This library supports UTF-16LE, UTF-16BE and UTF-16 encodings. First two are straightforward, but UTF-16 is trying to be
-smart about endianness in the following ways:
- * Decoding: uses BOM and 'spaces heuristic' to determine input endianness. Default is UTF-16LE, but can be 
-   overridden with `defaultEncoding: 'utf-16be'` option. Strips BOM unless `stripBOM: false`.
- * Encoding: uses UTF-16LE and writes BOM by default. Use `addBOM: false` to override.
+This error will occur when the `encoding` option is specified, but the value does
+not map to an encoding supported by the [iconv-lite](https://www.npmjs.org/package/iconv-lite#readme)
+module.
 
-## Other notes
+#### entity.too.large
 
-When decoding, be sure to supply a Buffer to decode() method, otherwise [bad things usually happen](https://github.com/ashtuchkin/iconv-lite/wiki/Use-Buffers-when-decoding).  
-Untranslatable characters are set to � or ?. No transliteration is currently supported.  
-Node versions 0.10.31 and 0.11.13 are buggy, don't use them (see #65, #77).  
+This error will occur when the `limit` option is specified, but the stream has
+an entity that is larger.
 
-## Testing
+#### request.aborted
 
-```bash
-$ git clone git@github.com:ashtuchkin/iconv-lite.git
-$ cd iconv-lite
-$ npm install
-$ npm test
-    
-$ # To view performance:
-$ node test/performance.js
+This error will occur when the request stream is aborted by the client before
+reading the body has finished.
 
-$ # To view test coverage:
-$ npm run coverage
-$ open coverage/lcov-report/index.html
+#### request.size.invalid
+
+This error will occur when the `length` option is specified, but the stream has
+emitted more bytes.
+
+#### stream.encoding.set
+
+This error will occur when the given stream has an encoding set on it, making it
+a decoded stream. The stream should not have an encoding set and is expected to
+emit `Buffer` objects.
+
+#### stream.not.readable
+
+This error will occur when the given stream is not readable.
+
+## Examples
+
+### Simple Express example
+
+```js
+var contentType = require('content-type')
+var express = require('express')
+var getRawBody = require('raw-body')
+
+var app = express()
+
+app.use(function (req, res, next) {
+  getRawBody(req, {
+    length: req.headers['content-length'],
+    limit: '1mb',
+    encoding: contentType.parse(req).parameters.charset
+  }, function (err, string) {
+    if (err) return next(err)
+    req.text = string
+    next()
+  })
+})
+
+// now access req.text
 ```
+
+### Simple Koa example
+
+```js
+var contentType = require('content-type')
+var getRawBody = require('raw-body')
+var koa = require('koa')
+
+var app = koa()
+
+app.use(function * (next) {
+  this.text = yield getRawBody(this.req, {
+    length: this.req.headers['content-length'],
+    limit: '1mb',
+    encoding: contentType.parse(this.req).parameters.charset
+  })
+  yield next
+})
+
+// now access this.text
+```
+
+### Using as a promise
+
+To use this library as a promise, simply omit the `callback` and a promise is
+returned, provided that a global `Promise` is defined.
+
+```js
+var getRawBody = require('raw-body')
+var http = require('http')
+
+var server = http.createServer(function (req, res) {
+  getRawBody(req)
+    .then(function (buf) {
+      res.statusCode = 200
+      res.end(buf.length + ' bytes submitted')
+    })
+    .catch(function (err) {
+      res.statusCode = 500
+      res.end(err.message)
+    })
+})
+
+server.listen(3000)
+```
+
+### Using with TypeScript
+
+```ts
+import * as getRawBody from 'raw-body';
+import * as http from 'http';
+
+const server = http.createServer((req, res) => {
+  getRawBody(req)
+  .then((buf) => {
+    res.statusCode = 200;
+    res.end(buf.length + ' bytes submitted');
+  })
+  .catch((err) => {
+    res.statusCode = err.statusCode;
+    res.end(err.message);
+  });
+});
+
+server.listen(3000);
+```
+
+## License
+
+[MIT](LICENSE)
+
+[npm-image]: https://img.shields.io/npm/v/raw-body.svg
+[npm-url]: https://npmjs.org/package/raw-body
+[node-version-image]: https://img.shields.io/node/v/raw-body.svg
+[node-version-url]: https://nodejs.org/en/download/
+[coveralls-image]: https://img.shields.io/coveralls/stream-utils/raw-body/master.svg
+[coveralls-url]: https://coveralls.io/r/stream-utils/raw-body?branch=master
+[downloads-image]: https://img.shields.io/npm/dm/raw-body.svg
+[downloads-url]: https://npmjs.org/package/raw-body
+[github-actions-ci-image]: https://img.shields.io/github/actions/workflow/status/stream-utils/raw-body/ci.yml?branch=master&label=ci
+[github-actions-ci-url]: https://github.com/jshttp/stream-utils/raw-body?query=workflow%3Aci
