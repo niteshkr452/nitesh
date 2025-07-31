@@ -1,312 +1,645 @@
-# debug
-[![Build Status](https://travis-ci.org/visionmedia/debug.svg?branch=master)](https://travis-ci.org/visionmedia/debug)  [![Coverage Status](https://coveralls.io/repos/github/visionmedia/debug/badge.svg?branch=master)](https://coveralls.io/github/visionmedia/debug?branch=master)  [![Slack](https://visionmedia-community-slackin.now.sh/badge.svg)](https://visionmedia-community-slackin.now.sh/) [![OpenCollective](https://opencollective.com/debug/backers/badge.svg)](#backers) 
-[![OpenCollective](https://opencollective.com/debug/sponsors/badge.svg)](#sponsors)
+<div align="center">
+🎉 announcing <a href="https://github.com/dotenvx/dotenvx">dotenvx</a>. <em>run anywhere, multi-environment, encrypted envs</em>.
+</div>
 
+&nbsp;
 
+<div align="center">
 
-A tiny node.js debugging utility modelled after node core's debugging technique.
+**Special thanks to [our sponsors](https://github.com/sponsors/motdotla)**
 
-**Discussion around the V3 API is under way [here](https://github.com/visionmedia/debug/issues/370)**
+<br>
+<a href="https://graphite.dev/?utm_source=github&utm_medium=repo&utm_campaign=dotenv"><img src="https://res.cloudinary.com/dotenv-org/image/upload/v1744035073/graphite_lgsrl8.gif" width="240" alt="Graphite" /></a>
+<br>
+<a href="https://graphite.dev/?utm_source=github&utm_medium=repo&utm_campaign=dotenv">
+  <b>Graphite is the AI developer productivity platform helping teams on GitHub ship higher quality software, faster.</b>
+</a>
+<hr>
+</div>
 
-## Installation
+# dotenv [![NPM version](https://img.shields.io/npm/v/dotenv.svg?style=flat-square)](https://www.npmjs.com/package/dotenv)
+
+<img src="https://raw.githubusercontent.com/motdotla/dotenv/master/dotenv.svg" alt="dotenv" align="right" width="200" />
+
+Dotenv is a zero-dependency module that loads environment variables from a `.env` file into [`process.env`](https://nodejs.org/docs/latest/api/process.html#process_process_env). Storing configuration in the environment separate from code is based on [The Twelve-Factor App](https://12factor.net/config) methodology.
+
+[![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg?style=flat-square)](https://github.com/feross/standard)
+[![LICENSE](https://img.shields.io/github/license/motdotla/dotenv.svg)](LICENSE)
+[![codecov](https://codecov.io/gh/motdotla/dotenv-expand/graph/badge.svg?token=pawWEyaMfg)](https://codecov.io/gh/motdotla/dotenv-expand)
+
+* [🌱 Install](#-install)
+* [🏗️ Usage (.env)](#%EF%B8%8F-usage)
+* [🌴 Multiple Environments 🆕](#-manage-multiple-environments)
+* [🚀 Deploying (encryption) 🆕](#-deploying)
+* [📚 Examples](#-examples)
+* [📖 Docs](#-documentation)
+* [❓ FAQ](#-faq)
+* [⏱️ Changelog](./CHANGELOG.md)
+
+## 🌱 Install
 
 ```bash
-$ npm install debug
+npm install dotenv --save
 ```
 
-## Usage
+You can also use an npm-compatible package manager like yarn, bun or pnpm:
 
-`debug` exposes a function; simply pass this function the name of your module, and it will return a decorated version of `console.error` for you to pass debug statements to. This will allow you to toggle the debug output for different parts of your module as well as the module as a whole.
-
-Example _app.js_:
-
-```js
-var debug = require('debug')('http')
-  , http = require('http')
-  , name = 'My App';
-
-// fake app
-
-debug('booting %s', name);
-
-http.createServer(function(req, res){
-  debug(req.method + ' ' + req.url);
-  res.end('hello\n');
-}).listen(3000, function(){
-  debug('listening');
-});
-
-// fake worker of some kind
-
-require('./worker');
+```bash
+yarn add dotenv
+```
+```bash
+bun add dotenv
+```
+```bash
+pnpm add dotenv
 ```
 
-Example _worker.js_:
+## 🏗️ Usage
 
-```js
-var debug = require('debug')('worker');
+<a href="https://www.youtube.com/watch?v=YtkZR0NFd1g">
+<div align="right">
+<img src="https://img.youtube.com/vi/YtkZR0NFd1g/hqdefault.jpg" alt="how to use dotenv video tutorial" align="right" width="330" />
+<img src="https://simpleicons.vercel.app/youtube/ff0000" alt="youtube/@dotenvorg" align="right" width="24" />
+</div>
+</a>
 
-setInterval(function(){
-  debug('doing some work');
-}, 1000);
+Create a `.env` file in the root of your project (if using a monorepo structure like `apps/backend/app.js`, put it in the root of the folder where your `app.js` process runs):
+
+```dosini
+S3_BUCKET="YOURS3BUCKET"
+SECRET_KEY="YOURSECRETKEYGOESHERE"
 ```
 
- The __DEBUG__ environment variable is then used to enable these based on space or comma-delimited names. Here are some examples:
+As early as possible in your application, import and configure dotenv:
 
-  ![debug http and worker](http://f.cl.ly/items/18471z1H402O24072r1J/Screenshot.png)
+```javascript
+require('dotenv').config()
+console.log(process.env) // remove this after you've confirmed it is working
+```
 
-  ![debug worker](http://f.cl.ly/items/1X413v1a3M0d3C2c1E0i/Screenshot.png)
+.. [or using ES6?](#how-do-i-use-dotenv-with-import)
 
-#### Windows note
+```javascript
+import 'dotenv/config'
+```
 
- On Windows the environment variable is set using the `set` command.
+That's it. `process.env` now has the keys and values you defined in your `.env` file:
 
- ```cmd
- set DEBUG=*,-not_this
- ```
+```javascript
+require('dotenv').config()
+// or import 'dotenv/config' if you're using ES6
 
- Note that PowerShell uses different syntax to set environment variables.
+...
 
- ```cmd
- $env:DEBUG = "*,-not_this"
-  ```
+s3.getBucketCors({Bucket: process.env.S3_BUCKET}, function(err, data) {})
+```
 
-Then, run the program to be debugged as usual.
+### Multiline values
 
-## Millisecond diff
+If you need multiline variables, for example private keys, those are now supported (`>= v15.0.0`) with line breaks:
 
-  When actively developing an application it can be useful to see when the time spent between one `debug()` call and the next. Suppose for example you invoke `debug()` before requesting a resource, and after as well, the "+NNNms" will show you how much time was spent between calls.
+```dosini
+PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----
+...
+Kh9NV...
+...
+-----END RSA PRIVATE KEY-----"
+```
 
-  ![](http://f.cl.ly/items/2i3h1d3t121M2Z1A3Q0N/Screenshot.png)
+Alternatively, you can double quote strings and use the `\n` character:
 
-  When stdout is not a TTY, `Date#toUTCString()` is used, making it more useful for logging the debug information as shown below:
+```dosini
+PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nKh9NV...\n-----END RSA PRIVATE KEY-----\n"
+```
 
-  ![](http://f.cl.ly/items/112H3i0e0o0P0a2Q2r11/Screenshot.png)
+### Comments
 
-## Conventions
+Comments may be added to your file on their own line or inline:
 
-  If you're using this in one or more of your libraries, you _should_ use the name of your library so that developers may toggle debugging as desired without guessing names. If you have more than one debuggers you _should_ prefix them with your library name and use ":" to separate features. For example "bodyParser" from Connect would then be "connect:bodyParser".
+```dosini
+# This is a comment
+SECRET_KEY=YOURSECRETKEYGOESHERE # comment
+SECRET_HASH="something-with-a-#-hash"
+```
 
-## Wildcards
+Comments begin where a `#` exists, so if your value contains a `#` please wrap it in quotes. This is a breaking change from `>= v15.0.0` and on.
 
-  The `*` character may be used as a wildcard. Suppose for example your library has debuggers named "connect:bodyParser", "connect:compress", "connect:session", instead of listing all three with `DEBUG=connect:bodyParser,connect:compress,connect:session`, you may simply do `DEBUG=connect:*`, or to run everything using this module simply use `DEBUG=*`.
+### Parsing
 
-  You can also exclude specific debuggers by prefixing them with a "-" character.  For example, `DEBUG=*,-connect:*` would include all debuggers except those starting with "connect:".
+The engine which parses the contents of your file containing environment variables is available to use. It accepts a String or Buffer and will return an Object with the parsed keys and values.
 
-## Environment Variables
+```javascript
+const dotenv = require('dotenv')
+const buf = Buffer.from('BASIC=basic')
+const config = dotenv.parse(buf) // will return an object
+console.log(typeof config, config) // object { BASIC : 'basic' }
+```
 
-  When running through Node.js, you can set a few environment variables that will
-  change the behavior of the debug logging:
+### Preload
 
-| Name      | Purpose                                         |
-|-----------|-------------------------------------------------|
-| `DEBUG`   | Enables/disables specific debugging namespaces. |
-| `DEBUG_COLORS`| Whether or not to use colors in the debug output. |
-| `DEBUG_DEPTH` | Object inspection depth. |
-| `DEBUG_SHOW_HIDDEN` | Shows hidden properties on inspected objects. |
+> Note: Consider using [`dotenvx`](https://github.com/dotenvx/dotenvx) instead of preloading. I am now doing (and recommending) so.
+>
+> It serves the same purpose (you do not need to require and load dotenv), adds better debugging, and works with ANY language, framework, or platform. – [motdotla](https://github.com/motdotla)
 
+You can use the `--require` (`-r`) [command line option](https://nodejs.org/api/cli.html#-r---require-module) to preload dotenv. By doing this, you do not need to require and load dotenv in your application code.
 
-  __Note:__ The environment variables beginning with `DEBUG_` end up being
-  converted into an Options object that gets used with `%o`/`%O` formatters.
-  See the Node.js documentation for
-  [`util.inspect()`](https://nodejs.org/api/util.html#util_util_inspect_object_options)
-  for the complete list.
+```bash
+$ node -r dotenv/config your_script.js
+```
 
-## Formatters
+The configuration options below are supported as command line arguments in the format `dotenv_config_<option>=value`
 
+```bash
+$ node -r dotenv/config your_script.js dotenv_config_path=/custom/path/to/.env dotenv_config_debug=true
+```
 
-  Debug uses [printf-style](https://wikipedia.org/wiki/Printf_format_string) formatting. Below are the officially supported formatters:
+Additionally, you can use environment variables to set configuration options. Command line arguments will precede these.
 
-| Formatter | Representation |
-|-----------|----------------|
-| `%O`      | Pretty-print an Object on multiple lines. |
-| `%o`      | Pretty-print an Object all on a single line. |
-| `%s`      | String. |
-| `%d`      | Number (both integer and float). |
-| `%j`      | JSON. Replaced with the string '[Circular]' if the argument contains circular references. |
-| `%%`      | Single percent sign ('%'). This does not consume an argument. |
+```bash
+$ DOTENV_CONFIG_<OPTION>=value node -r dotenv/config your_script.js
+```
 
-### Custom formatters
+```bash
+$ DOTENV_CONFIG_ENCODING=latin1 DOTENV_CONFIG_DEBUG=true node -r dotenv/config your_script.js dotenv_config_path=/custom/path/to/.env
+```
 
-  You can add custom formatters by extending the `debug.formatters` object. For example, if you wanted to add support for rendering a Buffer as hex with `%h`, you could do something like:
+### Variable Expansion
+
+You need to add the value of another variable in one of your variables? Use [dotenv-expand](https://github.com/motdotla/dotenv-expand).
+
+### Command Substitution
+
+Use [dotenvx](https://github.com/dotenvx/dotenvx) to use command substitution.
+
+Add the output of a command to one of your variables in your .env file.
+
+```ini
+# .env
+DATABASE_URL="postgres://$(whoami)@localhost/my_database"
+```
+```js
+// index.js
+console.log('DATABASE_URL', process.env.DATABASE_URL)
+```
+```sh
+$ dotenvx run --debug -- node index.js
+[dotenvx@0.14.1] injecting env (1) from .env
+DATABASE_URL postgres://yourusername@localhost/my_database
+```
+
+### Syncing
+
+You need to keep `.env` files in sync between machines, environments, or team members? Use [dotenvx](https://github.com/dotenvx/dotenvx) to encrypt your `.env` files and safely include them in source control. This still subscribes to the twelve-factor app rules by generating a decryption key separate from code.
+
+### Multiple Environments
+
+Use [dotenvx](https://github.com/dotenvx/dotenvx) to generate `.env.ci`, `.env.production` files, and more.
+
+### Deploying
+
+You need to deploy your secrets in a cloud-agnostic manner? Use [dotenvx](https://github.com/dotenvx/dotenvx) to generate a private decryption key that is set on your production server.
+
+## 🌴 Manage Multiple Environments
+
+Use [dotenvx](https://github.com/dotenvx/dotenvx)
+
+Run any environment locally. Create a `.env.ENVIRONMENT` file and use `--env-file` to load it. It's straightforward, yet flexible.
+
+```bash
+$ echo "HELLO=production" > .env.production
+$ echo "console.log('Hello ' + process.env.HELLO)" > index.js
+
+$ dotenvx run --env-file=.env.production -- node index.js
+Hello production
+> ^^
+```
+
+or with multiple .env files
+
+```bash
+$ echo "HELLO=local" > .env.local
+$ echo "HELLO=World" > .env
+$ echo "console.log('Hello ' + process.env.HELLO)" > index.js
+
+$ dotenvx run --env-file=.env.local --env-file=.env -- node index.js
+Hello local
+```
+
+[more environment examples](https://dotenvx.com/docs/quickstart/environments)
+
+## 🚀 Deploying
+
+Use [dotenvx](https://github.com/dotenvx/dotenvx).
+
+Add encryption to your `.env` files with a single command. Pass the `--encrypt` flag.
+
+```
+$ dotenvx set HELLO Production --encrypt -f .env.production
+$ echo "console.log('Hello ' + process.env.HELLO)" > index.js
+
+$ DOTENV_PRIVATE_KEY_PRODUCTION="<.env.production private key>" dotenvx run -- node index.js
+[dotenvx] injecting env (2) from .env.production
+Hello Production
+```
+
+[learn more](https://github.com/dotenvx/dotenvx?tab=readme-ov-file#encryption)
+
+## 📚 Examples
+
+See [examples](https://github.com/dotenv-org/examples) of using dotenv with various frameworks, languages, and configurations.
+
+* [nodejs](https://github.com/dotenv-org/examples/tree/master/usage/dotenv-nodejs)
+* [nodejs (debug on)](https://github.com/dotenv-org/examples/tree/master/usage/dotenv-nodejs-debug)
+* [nodejs (override on)](https://github.com/dotenv-org/examples/tree/master/usage/dotenv-nodejs-override)
+* [nodejs (processEnv override)](https://github.com/dotenv-org/examples/tree/master/usage/dotenv-custom-target)
+* [esm](https://github.com/dotenv-org/examples/tree/master/usage/dotenv-esm)
+* [esm (preload)](https://github.com/dotenv-org/examples/tree/master/usage/dotenv-esm-preload)
+* [typescript](https://github.com/dotenv-org/examples/tree/master/usage/dotenv-typescript)
+* [typescript parse](https://github.com/dotenv-org/examples/tree/master/usage/dotenv-typescript-parse)
+* [typescript config](https://github.com/dotenv-org/examples/tree/master/usage/dotenv-typescript-config)
+* [webpack](https://github.com/dotenv-org/examples/tree/master/usage/dotenv-webpack)
+* [webpack (plugin)](https://github.com/dotenv-org/examples/tree/master/usage/dotenv-webpack2)
+* [react](https://github.com/dotenv-org/examples/tree/master/usage/dotenv-react)
+* [react (typescript)](https://github.com/dotenv-org/examples/tree/master/usage/dotenv-react-typescript)
+* [express](https://github.com/dotenv-org/examples/tree/master/usage/dotenv-express)
+* [nestjs](https://github.com/dotenv-org/examples/tree/master/usage/dotenv-nestjs)
+* [fastify](https://github.com/dotenv-org/examples/tree/master/usage/dotenv-fastify)
+
+## 📖 Documentation
+
+Dotenv exposes four functions:
+
+* `config`
+* `parse`
+* `populate`
+* `decrypt`
+
+### Config
+
+`config` will read your `.env` file, parse the contents, assign it to
+[`process.env`](https://nodejs.org/docs/latest/api/process.html#process_process_env),
+and return an Object with a `parsed` key containing the loaded content or an `error` key if it failed.
 
 ```js
-const createDebug = require('debug')
-createDebug.formatters.h = (v) => {
-  return v.toString('hex')
+const result = dotenv.config()
+
+if (result.error) {
+  throw result.error
 }
 
-// …elsewhere
-const debug = createDebug('foo')
-debug('this is hex: %h', new Buffer('hello world'))
-//   foo this is hex: 68656c6c6f20776f726c6421 +0ms
+console.log(result.parsed)
 ```
 
-## Browser support
-  You can build a browser-ready script using [browserify](https://github.com/substack/node-browserify),
-  or just use the [browserify-as-a-service](https://wzrd.in/) [build](https://wzrd.in/standalone/debug@latest),
-  if you don't want to build it yourself.
+You can additionally, pass options to `config`.
 
-  Debug's enable state is currently persisted by `localStorage`.
-  Consider the situation shown below where you have `worker:a` and `worker:b`,
-  and wish to debug both. You can enable this using `localStorage.debug`:
+#### Options
+
+##### path
+
+Default: `path.resolve(process.cwd(), '.env')`
+
+Specify a custom path if your file containing environment variables is located elsewhere.
 
 ```js
-localStorage.debug = 'worker:*'
+require('dotenv').config({ path: '/custom/path/to/.env' })
 ```
 
-And then refresh the page.
+By default, `config` will look for a file called .env in the current working directory.
+
+Pass in multiple files as an array, and they will be parsed in order and combined with `process.env` (or `option.processEnv`, if set). The first value set for a variable will win, unless the `options.override` flag is set, in which case the last value set will win.  If a value already exists in `process.env` and the `options.override` flag is NOT set, no changes will be made to that value. 
+
+```js  
+require('dotenv').config({ path: ['.env.local', '.env'] })
+```
+
+##### encoding
+
+Default: `utf8`
+
+Specify the encoding of your file containing environment variables.
 
 ```js
-a = debug('worker:a');
-b = debug('worker:b');
-
-setInterval(function(){
-  a('doing some work');
-}, 1000);
-
-setInterval(function(){
-  b('doing some work');
-}, 1200);
+require('dotenv').config({ encoding: 'latin1' })
 ```
 
-#### Web Inspector Colors
+##### debug
 
-  Colors are also enabled on "Web Inspectors" that understand the `%c` formatting
-  option. These are WebKit web inspectors, Firefox ([since version
-  31](https://hacks.mozilla.org/2014/05/editable-box-model-multiple-selection-sublime-text-keys-much-more-firefox-developer-tools-episode-31/))
-  and the Firebug plugin for Firefox (any version).
+Default: `false`
 
-  Colored output looks something like:
-
-  ![](https://cloud.githubusercontent.com/assets/71256/3139768/b98c5fd8-e8ef-11e3-862a-f7253b6f47c6.png)
-
-
-## Output streams
-
-  By default `debug` will log to stderr, however this can be configured per-namespace by overriding the `log` method:
-
-Example _stdout.js_:
+Turn on logging to help debug why certain keys or values are not being set as you expect.
 
 ```js
-var debug = require('debug');
-var error = debug('app:error');
-
-// by default stderr is used
-error('goes to stderr!');
-
-var log = debug('app:log');
-// set this namespace to log via console.log
-log.log = console.log.bind(console); // don't forget to bind to console!
-log('goes to stdout');
-error('still goes to stderr!');
-
-// set all output to go via console.info
-// overrides all per-namespace log settings
-debug.log = console.info.bind(console);
-error('now goes to stdout via console.info');
-log('still goes to stdout, but via console.info now');
+require('dotenv').config({ debug: process.env.DEBUG })
 ```
 
+##### override
 
-## Authors
+Default: `false`
 
- - TJ Holowaychuk
- - Nathan Rajlich
- - Andrew Rhyne
- 
-## Backers
+Override any environment variables that have already been set on your machine with values from your .env file(s). If multiple files have been provided in `option.path` the override will also be used as each file is combined with the next. Without `override` being set, the first value wins. With `override` set the last value wins. 
 
-Support us with a monthly donation and help us continue our activities. [[Become a backer](https://opencollective.com/debug#backer)]
+```js
+require('dotenv').config({ override: true })
+```
 
-<a href="https://opencollective.com/debug/backer/0/website" target="_blank"><img src="https://opencollective.com/debug/backer/0/avatar.svg"></a>
-<a href="https://opencollective.com/debug/backer/1/website" target="_blank"><img src="https://opencollective.com/debug/backer/1/avatar.svg"></a>
-<a href="https://opencollective.com/debug/backer/2/website" target="_blank"><img src="https://opencollective.com/debug/backer/2/avatar.svg"></a>
-<a href="https://opencollective.com/debug/backer/3/website" target="_blank"><img src="https://opencollective.com/debug/backer/3/avatar.svg"></a>
-<a href="https://opencollective.com/debug/backer/4/website" target="_blank"><img src="https://opencollective.com/debug/backer/4/avatar.svg"></a>
-<a href="https://opencollective.com/debug/backer/5/website" target="_blank"><img src="https://opencollective.com/debug/backer/5/avatar.svg"></a>
-<a href="https://opencollective.com/debug/backer/6/website" target="_blank"><img src="https://opencollective.com/debug/backer/6/avatar.svg"></a>
-<a href="https://opencollective.com/debug/backer/7/website" target="_blank"><img src="https://opencollective.com/debug/backer/7/avatar.svg"></a>
-<a href="https://opencollective.com/debug/backer/8/website" target="_blank"><img src="https://opencollective.com/debug/backer/8/avatar.svg"></a>
-<a href="https://opencollective.com/debug/backer/9/website" target="_blank"><img src="https://opencollective.com/debug/backer/9/avatar.svg"></a>
-<a href="https://opencollective.com/debug/backer/10/website" target="_blank"><img src="https://opencollective.com/debug/backer/10/avatar.svg"></a>
-<a href="https://opencollective.com/debug/backer/11/website" target="_blank"><img src="https://opencollective.com/debug/backer/11/avatar.svg"></a>
-<a href="https://opencollective.com/debug/backer/12/website" target="_blank"><img src="https://opencollective.com/debug/backer/12/avatar.svg"></a>
-<a href="https://opencollective.com/debug/backer/13/website" target="_blank"><img src="https://opencollective.com/debug/backer/13/avatar.svg"></a>
-<a href="https://opencollective.com/debug/backer/14/website" target="_blank"><img src="https://opencollective.com/debug/backer/14/avatar.svg"></a>
-<a href="https://opencollective.com/debug/backer/15/website" target="_blank"><img src="https://opencollective.com/debug/backer/15/avatar.svg"></a>
-<a href="https://opencollective.com/debug/backer/16/website" target="_blank"><img src="https://opencollective.com/debug/backer/16/avatar.svg"></a>
-<a href="https://opencollective.com/debug/backer/17/website" target="_blank"><img src="https://opencollective.com/debug/backer/17/avatar.svg"></a>
-<a href="https://opencollective.com/debug/backer/18/website" target="_blank"><img src="https://opencollective.com/debug/backer/18/avatar.svg"></a>
-<a href="https://opencollective.com/debug/backer/19/website" target="_blank"><img src="https://opencollective.com/debug/backer/19/avatar.svg"></a>
-<a href="https://opencollective.com/debug/backer/20/website" target="_blank"><img src="https://opencollective.com/debug/backer/20/avatar.svg"></a>
-<a href="https://opencollective.com/debug/backer/21/website" target="_blank"><img src="https://opencollective.com/debug/backer/21/avatar.svg"></a>
-<a href="https://opencollective.com/debug/backer/22/website" target="_blank"><img src="https://opencollective.com/debug/backer/22/avatar.svg"></a>
-<a href="https://opencollective.com/debug/backer/23/website" target="_blank"><img src="https://opencollective.com/debug/backer/23/avatar.svg"></a>
-<a href="https://opencollective.com/debug/backer/24/website" target="_blank"><img src="https://opencollective.com/debug/backer/24/avatar.svg"></a>
-<a href="https://opencollective.com/debug/backer/25/website" target="_blank"><img src="https://opencollective.com/debug/backer/25/avatar.svg"></a>
-<a href="https://opencollective.com/debug/backer/26/website" target="_blank"><img src="https://opencollective.com/debug/backer/26/avatar.svg"></a>
-<a href="https://opencollective.com/debug/backer/27/website" target="_blank"><img src="https://opencollective.com/debug/backer/27/avatar.svg"></a>
-<a href="https://opencollective.com/debug/backer/28/website" target="_blank"><img src="https://opencollective.com/debug/backer/28/avatar.svg"></a>
-<a href="https://opencollective.com/debug/backer/29/website" target="_blank"><img src="https://opencollective.com/debug/backer/29/avatar.svg"></a>
+##### processEnv
 
+Default: `process.env`
 
-## Sponsors
+Specify an object to write your environment variables to. Defaults to `process.env` environment variables.
 
-Become a sponsor and get your logo on our README on Github with a link to your site. [[Become a sponsor](https://opencollective.com/debug#sponsor)]
+```js
+const myObject = {}
+require('dotenv').config({ processEnv: myObject })
 
-<a href="https://opencollective.com/debug/sponsor/0/website" target="_blank"><img src="https://opencollective.com/debug/sponsor/0/avatar.svg"></a>
-<a href="https://opencollective.com/debug/sponsor/1/website" target="_blank"><img src="https://opencollective.com/debug/sponsor/1/avatar.svg"></a>
-<a href="https://opencollective.com/debug/sponsor/2/website" target="_blank"><img src="https://opencollective.com/debug/sponsor/2/avatar.svg"></a>
-<a href="https://opencollective.com/debug/sponsor/3/website" target="_blank"><img src="https://opencollective.com/debug/sponsor/3/avatar.svg"></a>
-<a href="https://opencollective.com/debug/sponsor/4/website" target="_blank"><img src="https://opencollective.com/debug/sponsor/4/avatar.svg"></a>
-<a href="https://opencollective.com/debug/sponsor/5/website" target="_blank"><img src="https://opencollective.com/debug/sponsor/5/avatar.svg"></a>
-<a href="https://opencollective.com/debug/sponsor/6/website" target="_blank"><img src="https://opencollective.com/debug/sponsor/6/avatar.svg"></a>
-<a href="https://opencollective.com/debug/sponsor/7/website" target="_blank"><img src="https://opencollective.com/debug/sponsor/7/avatar.svg"></a>
-<a href="https://opencollective.com/debug/sponsor/8/website" target="_blank"><img src="https://opencollective.com/debug/sponsor/8/avatar.svg"></a>
-<a href="https://opencollective.com/debug/sponsor/9/website" target="_blank"><img src="https://opencollective.com/debug/sponsor/9/avatar.svg"></a>
-<a href="https://opencollective.com/debug/sponsor/10/website" target="_blank"><img src="https://opencollective.com/debug/sponsor/10/avatar.svg"></a>
-<a href="https://opencollective.com/debug/sponsor/11/website" target="_blank"><img src="https://opencollective.com/debug/sponsor/11/avatar.svg"></a>
-<a href="https://opencollective.com/debug/sponsor/12/website" target="_blank"><img src="https://opencollective.com/debug/sponsor/12/avatar.svg"></a>
-<a href="https://opencollective.com/debug/sponsor/13/website" target="_blank"><img src="https://opencollective.com/debug/sponsor/13/avatar.svg"></a>
-<a href="https://opencollective.com/debug/sponsor/14/website" target="_blank"><img src="https://opencollective.com/debug/sponsor/14/avatar.svg"></a>
-<a href="https://opencollective.com/debug/sponsor/15/website" target="_blank"><img src="https://opencollective.com/debug/sponsor/15/avatar.svg"></a>
-<a href="https://opencollective.com/debug/sponsor/16/website" target="_blank"><img src="https://opencollective.com/debug/sponsor/16/avatar.svg"></a>
-<a href="https://opencollective.com/debug/sponsor/17/website" target="_blank"><img src="https://opencollective.com/debug/sponsor/17/avatar.svg"></a>
-<a href="https://opencollective.com/debug/sponsor/18/website" target="_blank"><img src="https://opencollective.com/debug/sponsor/18/avatar.svg"></a>
-<a href="https://opencollective.com/debug/sponsor/19/website" target="_blank"><img src="https://opencollective.com/debug/sponsor/19/avatar.svg"></a>
-<a href="https://opencollective.com/debug/sponsor/20/website" target="_blank"><img src="https://opencollective.com/debug/sponsor/20/avatar.svg"></a>
-<a href="https://opencollective.com/debug/sponsor/21/website" target="_blank"><img src="https://opencollective.com/debug/sponsor/21/avatar.svg"></a>
-<a href="https://opencollective.com/debug/sponsor/22/website" target="_blank"><img src="https://opencollective.com/debug/sponsor/22/avatar.svg"></a>
-<a href="https://opencollective.com/debug/sponsor/23/website" target="_blank"><img src="https://opencollective.com/debug/sponsor/23/avatar.svg"></a>
-<a href="https://opencollective.com/debug/sponsor/24/website" target="_blank"><img src="https://opencollective.com/debug/sponsor/24/avatar.svg"></a>
-<a href="https://opencollective.com/debug/sponsor/25/website" target="_blank"><img src="https://opencollective.com/debug/sponsor/25/avatar.svg"></a>
-<a href="https://opencollective.com/debug/sponsor/26/website" target="_blank"><img src="https://opencollective.com/debug/sponsor/26/avatar.svg"></a>
-<a href="https://opencollective.com/debug/sponsor/27/website" target="_blank"><img src="https://opencollective.com/debug/sponsor/27/avatar.svg"></a>
-<a href="https://opencollective.com/debug/sponsor/28/website" target="_blank"><img src="https://opencollective.com/debug/sponsor/28/avatar.svg"></a>
-<a href="https://opencollective.com/debug/sponsor/29/website" target="_blank"><img src="https://opencollective.com/debug/sponsor/29/avatar.svg"></a>
+console.log(myObject) // values from .env
+console.log(process.env) // this was not changed or written to
+```
 
-## License
+### Parse
 
-(The MIT License)
+The engine which parses the contents of your file containing environment
+variables is available to use. It accepts a String or Buffer and will return
+an Object with the parsed keys and values.
 
-Copyright (c) 2014-2016 TJ Holowaychuk &lt;tj@vision-media.ca&gt;
+```js
+const dotenv = require('dotenv')
+const buf = Buffer.from('BASIC=basic')
+const config = dotenv.parse(buf) // will return an object
+console.log(typeof config, config) // object { BASIC : 'basic' }
+```
 
-Permission is hereby granted, free of charge, to any person obtaining
-a copy of this software and associated documentation files (the
-'Software'), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
-the following conditions:
+#### Options
 
-The above copyright notice and this permission notice shall be
-included in all copies or substantial portions of the Software.
+##### debug
 
-THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
-CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
-SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+Default: `false`
+
+Turn on logging to help debug why certain keys or values are not being set as you expect.
+
+```js
+const dotenv = require('dotenv')
+const buf = Buffer.from('hello world')
+const opt = { debug: true }
+const config = dotenv.parse(buf, opt)
+// expect a debug message because the buffer is not in KEY=VAL form
+```
+
+### Populate
+
+The engine which populates the contents of your .env file to `process.env` is available for use. It accepts a target, a source, and options. This is useful for power users who want to supply their own objects.
+
+For example, customizing the source:
+
+```js
+const dotenv = require('dotenv')
+const parsed = { HELLO: 'world' }
+
+dotenv.populate(process.env, parsed)
+
+console.log(process.env.HELLO) // world
+```
+
+For example, customizing the source AND target:
+
+```js
+const dotenv = require('dotenv')
+const parsed = { HELLO: 'universe' }
+const target = { HELLO: 'world' } // empty object
+
+dotenv.populate(target, parsed, { override: true, debug: true })
+
+console.log(target) // { HELLO: 'universe' }
+```
+
+#### options
+
+##### Debug
+
+Default: `false`
+
+Turn on logging to help debug why certain keys or values are not being populated as you expect.
+
+##### override
+
+Default: `false`
+
+Override any environment variables that have already been set.
+
+## ❓ FAQ
+
+### Why is the `.env` file not loading my environment variables successfully?
+
+Most likely your `.env` file is not in the correct place. [See this stack overflow](https://stackoverflow.com/questions/42335016/dotenv-file-is-not-loading-environment-variables).
+
+Turn on debug mode and try again..
+
+```js
+require('dotenv').config({ debug: true })
+```
+
+You will receive a helpful error outputted to your console.
+
+### Should I commit my `.env` file?
+
+No. We **strongly** recommend against committing your `.env` file to version
+control. It should only include environment-specific values such as database
+passwords or API keys. Your production database should have a different
+password than your development database.
+
+### Should I have multiple `.env` files?
+
+We recommend creating one `.env` file per environment. Use `.env` for local/development, `.env.production` for production and so on. This still follows the twelve factor principles as each is attributed individually to its own environment. Avoid custom set ups that work in inheritance somehow (`.env.production` inherits values form `.env` for example). It is better to duplicate values if necessary across each `.env.environment` file.
+
+> In a twelve-factor app, env vars are granular controls, each fully orthogonal to other env vars. They are never grouped together as “environments”, but instead are independently managed for each deploy. This is a model that scales up smoothly as the app naturally expands into more deploys over its lifetime.
+>
+> – [The Twelve-Factor App](http://12factor.net/config)
+
+### What rules does the parsing engine follow?
+
+The parsing engine currently supports the following rules:
+
+- `BASIC=basic` becomes `{BASIC: 'basic'}`
+- empty lines are skipped
+- lines beginning with `#` are treated as comments
+- `#` marks the beginning of a comment (unless when the value is wrapped in quotes)
+- empty values become empty strings (`EMPTY=` becomes `{EMPTY: ''}`)
+- inner quotes are maintained (think JSON) (`JSON={"foo": "bar"}` becomes `{JSON:"{\"foo\": \"bar\"}"`)
+- whitespace is removed from both ends of unquoted values (see more on [`trim`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/Trim)) (`FOO=  some value  ` becomes `{FOO: 'some value'}`)
+- single and double quoted values are escaped (`SINGLE_QUOTE='quoted'` becomes `{SINGLE_QUOTE: "quoted"}`)
+- single and double quoted values maintain whitespace from both ends (`FOO="  some value  "` becomes `{FOO: '  some value  '}`)
+- double quoted values expand new lines (`MULTILINE="new\nline"` becomes
+
+```
+{MULTILINE: 'new
+line'}
+```
+
+- backticks are supported (`` BACKTICK_KEY=`This has 'single' and "double" quotes inside of it.` ``)
+
+### What happens to environment variables that were already set?
+
+By default, we will never modify any environment variables that have already been set. In particular, if there is a variable in your `.env` file which collides with one that already exists in your environment, then that variable will be skipped.
+
+If instead, you want to override `process.env` use the `override` option.
+
+```javascript
+require('dotenv').config({ override: true })
+```
+
+### How come my environment variables are not showing up for React?
+
+Your React code is run in Webpack, where the `fs` module or even the `process` global itself are not accessible out-of-the-box. `process.env` can only be injected through Webpack configuration.
+
+If you are using [`react-scripts`](https://www.npmjs.com/package/react-scripts), which is distributed through [`create-react-app`](https://create-react-app.dev/), it has dotenv built in but with a quirk. Preface your environment variables with `REACT_APP_`. See [this stack overflow](https://stackoverflow.com/questions/42182577/is-it-possible-to-use-dotenv-in-a-react-project) for more details.
+
+If you are using other frameworks (e.g. Next.js, Gatsby...), you need to consult their documentation for how to inject environment variables into the client.
+
+### Can I customize/write plugins for dotenv?
+
+Yes! `dotenv.config()` returns an object representing the parsed `.env` file. This gives you everything you need to continue setting values on `process.env`. For example:
+
+```js
+const dotenv = require('dotenv')
+const variableExpansion = require('dotenv-expand')
+const myEnv = dotenv.config()
+variableExpansion(myEnv)
+```
+
+### How do I use dotenv with `import`?
+
+Simply..
+
+```javascript
+// index.mjs (ESM)
+import 'dotenv/config' // see https://github.com/motdotla/dotenv#how-do-i-use-dotenv-with-import
+import express from 'express'
+```
+
+A little background..
+
+> When you run a module containing an `import` declaration, the modules it imports are loaded first, then each module body is executed in a depth-first traversal of the dependency graph, avoiding cycles by skipping anything already executed.
+>
+> – [ES6 In Depth: Modules](https://hacks.mozilla.org/2015/08/es6-in-depth-modules/)
+
+What does this mean in plain language? It means you would think the following would work but it won't.
+
+`errorReporter.mjs`:
+```js
+class Client {
+  constructor (apiKey) {
+    console.log('apiKey', apiKey)
+
+    this.apiKey = apiKey
+  }
+}
+
+export default new Client(process.env.API_KEY)
+```
+`index.mjs`:
+```js
+// Note: this is INCORRECT and will not work
+import * as dotenv from 'dotenv'
+dotenv.config()
+
+import errorReporter from './errorReporter.mjs' // process.env.API_KEY will be blank!
+```
+
+`process.env.API_KEY` will be blank.
+
+Instead, `index.mjs` should be written as..
+
+```js
+import 'dotenv/config'
+
+import errorReporter from './errorReporter.mjs'
+```
+
+Does that make sense? It's a bit unintuitive, but it is how importing of ES6 modules work. Here is a [working example of this pitfall](https://github.com/dotenv-org/examples/tree/master/usage/dotenv-es6-import-pitfall).
+
+There are two alternatives to this approach:
+
+1. Preload dotenv: `node --require dotenv/config index.js` (_Note: you do not need to `import` dotenv with this approach_)
+2. Create a separate file that will execute `config` first as outlined in [this comment on #133](https://github.com/motdotla/dotenv/issues/133#issuecomment-255298822)
+
+### Why am I getting the error `Module not found: Error: Can't resolve 'crypto|os|path'`?
+
+You are using dotenv on the front-end and have not included a polyfill. Webpack < 5 used to include these for you. Do the following:
+
+```bash
+npm install node-polyfill-webpack-plugin
+```
+
+Configure your `webpack.config.js` to something like the following.
+
+```js
+require('dotenv').config()
+
+const path = require('path');
+const webpack = require('webpack')
+
+const NodePolyfillPlugin = require('node-polyfill-webpack-plugin')
+
+module.exports = {
+  mode: 'development',
+  entry: './src/index.ts',
+  output: {
+    filename: 'bundle.js',
+    path: path.resolve(__dirname, 'dist'),
+  },
+  plugins: [
+    new NodePolyfillPlugin(),
+    new webpack.DefinePlugin({
+      'process.env': {
+        HELLO: JSON.stringify(process.env.HELLO)
+      }
+    }),
+  ]
+};
+```
+
+Alternatively, just use [dotenv-webpack](https://github.com/mrsteele/dotenv-webpack) which does this and more behind the scenes for you.
+
+### What about variable expansion?
+
+Try [dotenv-expand](https://github.com/motdotla/dotenv-expand)
+
+### What about syncing and securing .env files?
+
+Use [dotenvx](https://github.com/dotenvx/dotenvx)
+
+### What if I accidentally commit my `.env` file to code?
+
+Remove it, [remove git history](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository) and then install the [git pre-commit hook](https://github.com/dotenvx/dotenvx#pre-commit) to prevent this from ever happening again. 
+
+```
+brew install dotenvx/brew/dotenvx
+dotenvx precommit --install
+```
+
+### How can I prevent committing my `.env` file to a Docker build?
+
+Use the [docker prebuild hook](https://dotenvx.com/docs/features/prebuild).
+
+```bash
+# Dockerfile
+...
+RUN curl -fsS https://dotenvx.sh/ | sh
+...
+RUN dotenvx prebuild
+CMD ["dotenvx", "run", "--", "node", "index.js"]
+```
+
+## Contributing Guide
+
+See [CONTRIBUTING.md](CONTRIBUTING.md)
+
+## CHANGELOG
+
+See [CHANGELOG.md](CHANGELOG.md)
+
+## Who's using dotenv?
+
+[These npm modules depend on it.](https://www.npmjs.com/browse/depended/dotenv)
+
+Projects that expand it often use the [keyword "dotenv" on npm](https://www.npmjs.com/search?q=keywords:dotenv).
