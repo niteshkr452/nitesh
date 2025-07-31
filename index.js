@@ -1,146 +1,137 @@
 /*!
- * statuses
- * Copyright(c) 2014 Jonathan Ong
- * Copyright(c) 2016 Douglas Christopher Wilson
+ * fresh
+ * Copyright(c) 2012 TJ Holowaychuk
+ * Copyright(c) 2016-2017 Douglas Christopher Wilson
  * MIT Licensed
  */
 
 'use strict'
 
 /**
- * Module dependencies.
+ * RegExp to check for no-cache token in Cache-Control.
  * @private
  */
 
-var codes = require('./codes.json')
+var CACHE_CONTROL_NO_CACHE_REGEXP = /(?:^|,)\s*?no-cache\s*?(?:,|$)/
 
 /**
  * Module exports.
  * @public
  */
 
-module.exports = status
-
-// status code to message map
-status.message = codes
-
-// status message (lower-case) to code map
-status.code = createMessageToStatusCodeMap(codes)
-
-// array of status codes
-status.codes = createStatusCodeList(codes)
-
-// status codes for redirects
-status.redirect = {
-  300: true,
-  301: true,
-  302: true,
-  303: true,
-  305: true,
-  307: true,
-  308: true
-}
-
-// status codes for empty bodies
-status.empty = {
-  204: true,
-  205: true,
-  304: true
-}
-
-// status codes for when you should retry the request
-status.retry = {
-  502: true,
-  503: true,
-  504: true
-}
+module.exports = fresh
 
 /**
- * Create a map of message to status code.
- * @private
- */
-
-function createMessageToStatusCodeMap (codes) {
-  var map = {}
-
-  Object.keys(codes).forEach(function forEachCode (code) {
-    var message = codes[code]
-    var status = Number(code)
-
-    // populate map
-    map[message.toLowerCase()] = status
-  })
-
-  return map
-}
-
-/**
- * Create a list of all status codes.
- * @private
- */
-
-function createStatusCodeList (codes) {
-  return Object.keys(codes).map(function mapCode (code) {
-    return Number(code)
-  })
-}
-
-/**
- * Get the status code for given message.
- * @private
- */
-
-function getStatusCode (message) {
-  var msg = message.toLowerCase()
-
-  if (!Object.prototype.hasOwnProperty.call(status.code, msg)) {
-    throw new Error('invalid status message: "' + message + '"')
-  }
-
-  return status.code[msg]
-}
-
-/**
- * Get the status message for given code.
- * @private
- */
-
-function getStatusMessage (code) {
-  if (!Object.prototype.hasOwnProperty.call(status.message, code)) {
-    throw new Error('invalid status code: ' + code)
-  }
-
-  return status.message[code]
-}
-
-/**
- * Get the status code.
+ * Check freshness of the response using request and response headers.
  *
- * Given a number, this will throw if it is not a known status
- * code, otherwise the code will be returned. Given a string,
- * the string will be parsed for a number and return the code
- * if valid, otherwise will lookup the code assuming this is
- * the status message.
- *
- * @param {string|number} code
- * @returns {number}
+ * @param {Object} reqHeaders
+ * @param {Object} resHeaders
+ * @return {Boolean}
  * @public
  */
 
-function status (code) {
-  if (typeof code === 'number') {
-    return getStatusMessage(code)
+function fresh (reqHeaders, resHeaders) {
+  // fields
+  var modifiedSince = reqHeaders['if-modified-since']
+  var noneMatch = reqHeaders['if-none-match']
+
+  // unconditional request
+  if (!modifiedSince && !noneMatch) {
+    return false
   }
 
-  if (typeof code !== 'string') {
-    throw new TypeError('code must be a number or string')
+  // Always return stale when Cache-Control: no-cache
+  // to support end-to-end reload requests
+  // https://tools.ietf.org/html/rfc2616#section-14.9.4
+  var cacheControl = reqHeaders['cache-control']
+  if (cacheControl && CACHE_CONTROL_NO_CACHE_REGEXP.test(cacheControl)) {
+    return false
   }
 
-  // '403'
-  var n = parseInt(code, 10)
-  if (!isNaN(n)) {
-    return getStatusMessage(n)
+  // if-none-match
+  if (noneMatch && noneMatch !== '*') {
+    var etag = resHeaders['etag']
+
+    if (!etag) {
+      return false
+    }
+
+    var etagStale = true
+    var matches = parseTokenList(noneMatch)
+    for (var i = 0; i < matches.length; i++) {
+      var match = matches[i]
+      if (match === etag || match === 'W/' + etag || 'W/' + match === etag) {
+        etagStale = false
+        break
+      }
+    }
+
+    if (etagStale) {
+      return false
+    }
   }
 
-  return getStatusCode(code)
+  // if-modified-since
+  if (modifiedSince) {
+    var lastModified = resHeaders['last-modified']
+    var modifiedStale = !lastModified || !(parseHttpDate(lastModified) <= parseHttpDate(modifiedSince))
+
+    if (modifiedStale) {
+      return false
+    }
+  }
+
+  return true
+}
+
+/**
+ * Parse an HTTP Date into a number.
+ *
+ * @param {string} date
+ * @private
+ */
+
+function parseHttpDate (date) {
+  var timestamp = date && Date.parse(date)
+
+  // istanbul ignore next: guard against date.js Date.parse patching
+  return typeof timestamp === 'number'
+    ? timestamp
+    : NaN
+}
+
+/**
+ * Parse a HTTP token list.
+ *
+ * @param {string} str
+ * @private
+ */
+
+function parseTokenList (str) {
+  var end = 0
+  var list = []
+  var start = 0
+
+  // gather tokens
+  for (var i = 0, len = str.length; i < len; i++) {
+    switch (str.charCodeAt(i)) {
+      case 0x20: /*   */
+        if (start === end) {
+          start = end = i + 1
+        }
+        break
+      case 0x2c: /* , */
+        list.push(str.substring(start, end))
+        start = end = i + 1
+        break
+      default:
+        end = i + 1
+        break
+    }
+  }
+
+  // final token
+  list.push(str.substring(start, end))
+
+  return list
 }

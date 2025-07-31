@@ -1,20 +1,12 @@
-# statuses
+# fresh
 
-[![NPM Version][npm-version-image]][npm-url]
-[![NPM Downloads][npm-downloads-image]][npm-url]
+[![NPM Version][npm-image]][npm-url]
+[![NPM Downloads][downloads-image]][downloads-url]
 [![Node.js Version][node-version-image]][node-version-url]
-[![Build Status][ci-image]][ci-url]
+[![Build Status][travis-image]][travis-url]
 [![Test Coverage][coveralls-image]][coveralls-url]
 
-HTTP status utility for node.
-
-This module provides a list of status codes and messages sourced from
-a few different projects:
-
-  * The [IANA Status Code Registry](https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml)
-  * The [Node.js project](https://nodejs.org/)
-  * The [NGINX project](https://www.nginx.com/)
-  * The [Apache HTTP Server project](https://httpd.apache.org/)
+HTTP response freshness testing
 
 ## Installation
 
@@ -22,8 +14,8 @@ This is a [Node.js](https://nodejs.org/en/) module available through the
 [npm registry](https://www.npmjs.com/). Installation is done using the
 [`npm install` command](https://docs.npmjs.com/getting-started/installing-npm-packages-locally):
 
-```sh
-$ npm install statuses
+```
+$ npm install fresh
 ```
 
 ## API
@@ -31,106 +23,97 @@ $ npm install statuses
 <!-- eslint-disable no-unused-vars -->
 
 ```js
-var status = require('statuses')
+var fresh = require('fresh')
 ```
 
-### status(code)
+### fresh(reqHeaders, resHeaders)
 
-Returns the status message string for a known HTTP status code. The code
-may be a number or a string. An error is thrown for an unknown status code.
+Check freshness of the response using request and response headers.
 
-<!-- eslint-disable no-undef -->
+When the response is still "fresh" in the client's cache `true` is
+returned, otherwise `false` is returned to indicate that the client
+cache is now stale and the full response should be sent.
+
+When a client sends the `Cache-Control: no-cache` request header to
+indicate an end-to-end reload request, this module will return `false`
+to make handling these requests transparent.
+
+## Known Issues
+
+This module is designed to only follow the HTTP specifications, not
+to work-around all kinda of client bugs (especially since this module
+typically does not recieve enough information to understand what the
+client actually is).
+
+There is a known issue that in certain versions of Safari, Safari
+will incorrectly make a request that allows this module to validate
+freshness of the resource even when Safari does not have a
+representation of the resource in the cache. The module
+[jumanji](https://www.npmjs.com/package/jumanji) can be used in
+an Express application to work-around this issue and also provides
+links to further reading on this Safari bug.
+
+## Example
+
+### API usage
+
+<!-- eslint-disable no-redeclare, no-undef -->
 
 ```js
-status(403) // => 'Forbidden'
-status('403') // => 'Forbidden'
-status(306) // throws
+var reqHeaders = { 'if-none-match': '"foo"' }
+var resHeaders = { 'etag': '"bar"' }
+fresh(reqHeaders, resHeaders)
+// => false
+
+var reqHeaders = { 'if-none-match': '"foo"' }
+var resHeaders = { 'etag': '"foo"' }
+fresh(reqHeaders, resHeaders)
+// => true
 ```
 
-### status(msg)
-
-Returns the numeric status code for a known HTTP status message. The message
-is case-insensitive. An error is thrown for an unknown status message.
-
-<!-- eslint-disable no-undef -->
+### Using with Node.js http server
 
 ```js
-status('forbidden') // => 403
-status('Forbidden') // => 403
-status('foo') // throws
-```
+var fresh = require('fresh')
+var http = require('http')
 
-### status.codes
+var server = http.createServer(function (req, res) {
+  // perform server logic
+  // ... including adding ETag / Last-Modified response headers
 
-Returns an array of all the status codes as `Integer`s.
+  if (isFresh(req, res)) {
+    // client has a fresh copy of resource
+    res.statusCode = 304
+    res.end()
+    return
+  }
 
-### status.code[msg]
+  // send the resource
+  res.statusCode = 200
+  res.end('hello, world!')
+})
 
-Returns the numeric status code for a known status message (in lower-case),
-otherwise `undefined`.
+function isFresh (req, res) {
+  return fresh(req.headers, {
+    'etag': res.getHeader('ETag'),
+    'last-modified': res.getHeader('Last-Modified')
+  })
+}
 
-<!-- eslint-disable no-undef, no-unused-expressions -->
-
-```js
-status['not found'] // => 404
-```
-
-### status.empty[code]
-
-Returns `true` if a status code expects an empty body.
-
-<!-- eslint-disable no-undef, no-unused-expressions -->
-
-```js
-status.empty[200] // => undefined
-status.empty[204] // => true
-status.empty[304] // => true
-```
-
-### status.message[code]
-
-Returns the string message for a known numeric status code, otherwise
-`undefined`. This object is the same format as the
-[Node.js http module `http.STATUS_CODES`](https://nodejs.org/dist/latest/docs/api/http.html#http_http_status_codes).
-
-<!-- eslint-disable no-undef, no-unused-expressions -->
-
-```js
-status.message[404] // => 'Not Found'
-```
-
-### status.redirect[code]
-
-Returns `true` if a status code is a valid redirect status.
-
-<!-- eslint-disable no-undef, no-unused-expressions -->
-
-```js
-status.redirect[200] // => undefined
-status.redirect[301] // => true
-```
-
-### status.retry[code]
-
-Returns `true` if you should retry the rest.
-
-<!-- eslint-disable no-undef, no-unused-expressions -->
-
-```js
-status.retry[501] // => undefined
-status.retry[503] // => true
+server.listen(3000)
 ```
 
 ## License
 
 [MIT](LICENSE)
 
-[ci-image]: https://badgen.net/github/checks/jshttp/statuses/master?label=ci
-[ci-url]: https://github.com/jshttp/statuses/actions?query=workflow%3Aci
-[coveralls-image]: https://badgen.net/coveralls/c/github/jshttp/statuses/master
-[coveralls-url]: https://coveralls.io/r/jshttp/statuses?branch=master
-[node-version-image]: https://badgen.net/npm/node/statuses
-[node-version-url]: https://nodejs.org/en/download
-[npm-downloads-image]: https://badgen.net/npm/dm/statuses
-[npm-url]: https://npmjs.org/package/statuses
-[npm-version-image]: https://badgen.net/npm/v/statuses
+[npm-image]: https://img.shields.io/npm/v/fresh.svg
+[npm-url]: https://npmjs.org/package/fresh
+[node-version-image]: https://img.shields.io/node/v/fresh.svg
+[node-version-url]: https://nodejs.org/en/
+[travis-image]: https://img.shields.io/travis/jshttp/fresh/master.svg
+[travis-url]: https://travis-ci.org/jshttp/fresh
+[coveralls-image]: https://img.shields.io/coveralls/jshttp/fresh/master.svg
+[coveralls-url]: https://coveralls.io/r/jshttp/fresh?branch=master
+[downloads-image]: https://img.shields.io/npm/dm/fresh.svg
+[downloads-url]: https://npmjs.org/package/fresh
